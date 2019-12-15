@@ -56,7 +56,7 @@ _END;
 		$connection = new mysqli($hn, $un, $pw, $db);
 		if ($connection->connect_error) 
 		{
-			header("dberrorpage.php");
+			header("Location:dberrorpage.php");
 			exit;
 		}
 
@@ -116,7 +116,6 @@ _END;
 				$token = hash('ripemd128', $salt . $password);
 				if ($token == $row[2])
 				{
-					session_start();
 					$_SESSION['username'] = $username;
 					$_SESSION['password'] = $password;
 					$connection->close();
@@ -144,3 +143,5 @@ _END;
 		if (get_magic_quotes_gpc()) $string = stripslashes($string);
 			return $connection->real_escape_string($string);
 	}
+
+?>

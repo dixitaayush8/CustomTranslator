@@ -139,7 +139,6 @@ _END;
 				}
 				else
 				{
-					session_start();
 					$_SESSION['username'] = $username;
 					$_SESSION['password'] = $password;
 					$connection->close();
