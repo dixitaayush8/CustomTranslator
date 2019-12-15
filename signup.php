@@ -118,13 +118,15 @@ _END;
 		{
 			$password = mysql_entities_fix_string($connection, $_POST['password']);
 		}
+		
 		session_start();
-		if (isset($_SESSION['username']))
+		if ((session_status() == 2) && isset($_SESSION['username']))
 		{
 			$connection->close();
 			header("Location:lametranslate.php");
 			exit;
 		}
+		
 		if(isset($_POST['username']) && isset($_POST['password']) && validate_username($username) && validate_password($password))
 		{
 				$salt = microtime();

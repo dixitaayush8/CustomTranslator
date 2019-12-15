@@ -87,7 +87,6 @@ _END;
 						header("Location:dberrorpage.php");
 						exit;
 					}
-					$resTwo->close();
 				}
 				else
 				{
@@ -105,67 +104,8 @@ _END;
 
 				$filepathInitial = $completeFilePathFirst;
 				$filepathInitialTwo = $completeFilePathSecond;
-				$fileOpener = fopen($filepathInitial, 'r');
-				if (!fopen($filepathInitial, 'r'))
-				{
-					$connection->close();
-					header("Location:fileioerror.php");
-					exit;
-				}
-	    		$fileSize = fileSize($filepathInitial);
-	    		$key = -1;
-	    		if(flock($fileOpener, LOCK_EX))
-	    		{
-	    			$line = fread($fileOpener, $fileSize);
-	    			$array_of_strings = preg_split('/\s+/',$line);
-	    			$lowercase_array_of_strings = array_map('strtolower', $array_of_strings);
-	    			$lowercase_array_of_strings = array_map('trim', $lowercase_array_of_strings);
-	    			if (is_numeric(array_search($text, $lowercase_array_of_strings)))
-	    			{
-	    				$key = array_search($text, $lowercase_array_of_strings);
-	    				
-	    			}
-	    			flock($fileOpener, LOCK_UN); 
-	    		}
-	    		fclose($fileOpener);
-	    		if ($key == -1)
-	    		{
-	    			echo "No translation available for this text. Please enter a different text.";
-	    		}
-	    		else
-	    		{
-				$fileOpenerTwo = fopen($filepathInitialTwo, 'r');
-				if (!fopen($filepathInitialTwo, 'r'))
-				{
-					$connection->close();
-					header("Location:fileioerror.php");
-					exit;
-				}
-	    		$fileSizeTwo = fileSize($filepathInitialTwo);
-	    		$translation = "";
-	    		if(flock($fileOpenerTwo, LOCK_EX))
-	    		{
-	    			$line = fread($fileOpenerTwo, $fileSizeTwo);
-	    			$array_of_strings = preg_split('/\s+/',$line);
-	    			$lowercase_array_of_strings = array_map('strtolower', $array_of_strings);
-	    			$lowercase_array_of_strings = array_map('trim', $lowercase_array_of_strings);
-	    			if ($key < count($lowercase_array_of_strings) && $key >= 0)
-	    			{
-	    				if ($lowercase_array_of_strings[$key])
-	    				{
-		    				$translation = $lowercase_array_of_strings[$key];
-		    				echo $translation;
-	    				}
-	    			}
-	    			else
-	    			{
-	    				echo "No translation available for this text. Please enter a different text.";
-	    			}
-	    			flock($fileOpenerTwo, LOCK_UN); 
-	    		}
-	    		fclose($fileOpenerTwo);
-			}
-
+				translate($connection, $filepathInitial, $filepathInitialTwo, $text);
+				$connection->close();
 		}
 
 		else if (isset($_POST['Name']))
@@ -188,67 +128,7 @@ _END;
 						$resTwo->close();
 						$filepathInitial = $row[1];
 						$filepathInitialTwo = $row[2];
-						$fileOpener = fopen($filepathInitial, 'r');
-						if (!fopen($filepathInitial, 'r'))
-						{
-							$connection->close();
-							header("Location:fileioerror.php");
-							exit;
-						}
-			    		$fileSize = fileSize($filepathInitial);
-			    		$key = -1;
-			    		if(flock($fileOpener, LOCK_EX))
-			    		{
-			    			$line = fread($fileOpener, $fileSize);
-			    			$array_of_strings = preg_split('/\s+/',$line);
-			    			$lowercase_array_of_strings = array_map('strtolower', $array_of_strings);
-			    			$lowercase_array_of_strings = array_map('trim', $lowercase_array_of_strings);
-			    			if (is_numeric(array_search($text, $lowercase_array_of_strings)))
-			    			{
-			    				$key = array_search($text, $lowercase_array_of_strings);
-			    				
-			    			}
-			    			flock($fileOpener, LOCK_UN); 
-			    		}
-			    		fclose($fileOpener);
-			    		if ($key == -1)
-			    		{
-			    			echo "No translation available for this text. Please enter a different text.";
-			    		}
-			    		else
-			    		{
-			    		$filepathInitialTwo = $row[2];
-						$fileOpenerTwo = fopen($filepathInitialTwo, 'r');
-						if (!fopen($filepathInitialTwo, 'r'))
-						{
-							$connection->close();
-							header("Location:fileioerror.php");
-							exit;
-						}
-			    		$fileSizeTwo = fileSize($filepathInitialTwo);
-			    		$translation = "";
-			    		if(flock($fileOpenerTwo, LOCK_EX))
-			    		{
-			    			$line = fread($fileOpenerTwo, $fileSizeTwo);
-			    			$array_of_strings = preg_split('/\s+/',$line);
-			    			$lowercase_array_of_strings = array_map('strtolower', $array_of_strings);
-			    			$lowercase_array_of_strings = array_map('trim', $lowercase_array_of_strings);
-			    			if ($key < count($lowercase_array_of_strings) && $key >= 0)
-			    			{
-			    				if ($lowercase_array_of_strings[$key])
-			    				{
-				    				$translation = $lowercase_array_of_strings[$key];
-				    				echo $translation;
-			    				}
-			    			}
-			    			else
-			    			{
-			    				echo "No translation available for this text. Please enter a different text.";
-			    			}
-			    			flock($fileOpenerTwo, LOCK_UN); 
-			    		}
-			    		fclose($fileOpenerTwo);
-					}
+						translate($connection,$filepathInitial, $filepathInitialTwo, $text);
 				}
 			}
 				else if ($res->num_rows)
@@ -257,70 +137,11 @@ _END;
 					$res->close();
 					$filepathInitial = $row[1];
 					$filepathInitialTwo = $row[2];
-					$fileOpener = fopen($filepathInitial, 'r');
-					if (!fopen($filepathInitial, 'r'))
-					{
-						$connection->close();
-						header("Location:fileioerror.php");
-						exit;
-					}
-		    		$fileSize = fileSize($filepathInitial);
-		    		$key = -1;
-		    		if(flock($fileOpener, LOCK_EX))
-		    		{
-		    			$line = fread($fileOpener, $fileSize);
-		    			$array_of_strings = preg_split('/\s+/',$line);
-		    			$lowercase_array_of_strings = array_map('strtolower', $array_of_strings);
-		    			$lowercase_array_of_strings = array_map('trim', $lowercase_array_of_strings);
-		    			if (is_numeric(array_search($text, $lowercase_array_of_strings)))
-		    			{
-		    				$key = array_search($text, $lowercase_array_of_strings);
-		    				
-		    			}
-		    			flock($fileOpener, LOCK_UN); 
-		    		}
-		    		fclose($fileOpener);
-		    		if ($key == -1)
-		    		{
-		    			echo "No translation available for this text. Please enter a different text.";
-		    		}
-		    		else
-		    		{
-		    		$filepathInitialTwo = $row[2];
-					$fileOpenerTwo = fopen($filepathInitialTwo, 'r');
-					if (!fopen($filepathInitialTwo, 'r'))
-					{
-						$connection->close();
-						header("Location:fileioerror.php");
-						exit;
-					}
-		    		$fileSizeTwo = fileSize($filepathInitialTwo);
-		    		$translation = "";
-		    		if(flock($fileOpenerTwo, LOCK_EX))
-		    		{
-		    			$line = fread($fileOpenerTwo, $fileSizeTwo);
-		    			$array_of_strings = preg_split('/\s+/',$line);
-		    			$lowercase_array_of_strings = array_map('strtolower', $array_of_strings);
-		    			$lowercase_array_of_strings = array_map('trim', $lowercase_array_of_strings);
-		    			if ($key < count($lowercase_array_of_strings) && $key >= 0)
-		    			{
-		    				if ($lowercase_array_of_strings[$key])
-		    				{
-			    				$translation = $lowercase_array_of_strings[$key];
-			    				echo $translation;
-		    				}
-		    			}
-		    			else
-		    			{
-		    				echo "No translation available for this text. Please enter a different text.";
-		    			}
-		    			flock($fileOpenerTwo, LOCK_UN); 
-		    		}
-		    		fclose($fileOpenerTwo);	
+					translate($connection, $filepathInitial, $filepathInitialTwo, $text);
 				}
+				$connection->close();
 		}
 	}
-}
 		else
 		{
 			echo <<<_END
@@ -350,36 +171,60 @@ _END;
 					$res->close();
 					$filepathInitial = $row[1];
 					$filepathInitialTwo = $row[2];
-					$fileOpener = fopen($filepathInitial, 'r');
-					if (!fopen($filepathInitial, 'r'))
-					{
-						$connection->close();
-						header("Location:fileioerror.php");
-						exit;
-					}
-		    		$fileSize = fileSize($filepathInitial);
-		    		$key = -1;
-		    		if(flock($fileOpener, LOCK_EX))
-		    		{
-		    			$line = fread($fileOpener, $fileSize);
-		    			$array_of_strings = preg_split('/\s+/',$line);
-		    			$lowercase_array_of_strings = array_map('strtolower', $array_of_strings);
-		    			$lowercase_array_of_strings = array_map('trim', $lowercase_array_of_strings);
-		    			if (is_numeric(array_search($text, $lowercase_array_of_strings)))
-		    			{
-		    				$key = array_search($text, $lowercase_array_of_strings);
-		    				
-		    			}
-		    			flock($fileOpener, LOCK_UN); 
-		    		}
-		    		fclose($fileOpener);
-		    		if ($key == -1)
-		    		{
-		    			echo "No translation available for this text. Please enter a different text.";
-		    		}
-		    		else
-		    		{
-		    		$filepathInitialTwo = $row[2];
+					translate($connection, $filepathInitial, $filepathInitialTwo, $text);			
+				}
+			}
+			$connection->close();
+
+		}
+
+		function destroy_session_and_data() {
+			$_SESSION = array();
+			setcookie(session_name(), '', time() - 2592000, '/');
+			session_destroy();
+		}
+
+		function mysql_entities_fix_string($connection, $string) {
+			return htmlentities(mysql_fix_string($connection, $string));
+		}
+
+		function mysql_fix_string($connection, $string) {
+			if (get_magic_quotes_gpc()) $string = stripslashes($string);
+				return $connection->real_escape_string($string);
+		}
+
+		function translate($connection, $file1, $file2, $text)
+		{
+			$fileOpener = fopen($file1, 'r');
+				if (!fopen($file1, 'r'))
+				{
+					$connection->close();
+					header("Location:fileioerror.php");
+					exit;
+				}
+	    		$fileSize = fileSize($file1);
+	    		$key = -1;
+	    		if(flock($fileOpener, LOCK_EX))
+	    		{
+	    			$line = fread($fileOpener, $fileSize);
+	    			$array_of_strings = preg_split('/\s+/',$line);
+	    			$lowercase_array_of_strings = array_map('strtolower', $array_of_strings);
+	    			$lowercase_array_of_strings = array_map('trim', $lowercase_array_of_strings);
+	    			if (is_numeric(array_search($text, $lowercase_array_of_strings)))
+	    			{
+	    				$key = array_search($text, $lowercase_array_of_strings);
+	    				
+	    			}
+	    			flock($fileOpener, LOCK_UN); 
+	    		}
+	    		fclose($fileOpener);
+	    		if ($key == -1)
+	    		{
+	    			echo "No translation available for this text. Please enter a different text.";
+	    		}
+	    		else
+	    		{
+		    		$filepathInitialTwo = $file2;
 					$fileOpenerTwo = fopen($filepathInitialTwo, 'r');
 					if (!fopen($filepathInitialTwo, 'r'))
 					{
@@ -410,27 +255,6 @@ _END;
 		    			flock($fileOpenerTwo, LOCK_UN); 
 		    		}
 		    		fclose($fileOpenerTwo);
-		    	}
-				}
-			}
-			$connection->close();
-
+	    		}
 		}
-
-		function destroy_session_and_data() {
-			$_SESSION = array();
-			setcookie(session_name(), '', time() - 2592000, '/');
-			session_destroy();
-		}
-
-		function mysql_entities_fix_string($connection, $string) {
-			return htmlentities(mysql_fix_string($connection, $string));
-		}
-
-		function mysql_fix_string($connection, $string) {
-			if (get_magic_quotes_gpc()) $string = stripslashes($string);
-				return $connection->real_escape_string($string);
-		}
-
-		//destroy the session when user logs out/times out, figure out how to deal with uploading files. Auth is p much done. Remove die's or echo's if needed
 ?>

@@ -90,8 +90,9 @@ _END;
 			$password = mysql_entities_fix_string($connection, $_POST['password']);
 		}
 
+
 		session_start();
-		if (isset($_SESSION['username']))
+		if ((session_status() == 2) && isset($_SESSION['username']))
 		{
 			$connection->close();
 			header("Location:lametranslate.php");
