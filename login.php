@@ -51,16 +51,6 @@ echo <<<_END
 
 _END;
 
-
-		include_once 'dbconfig.php';
-		$connection = new mysqli($hn, $un, $pw, $db);
-		if ($connection->connect_error) 
-		{
-			header("Location:dberrorpage.php");
-			exit;
-		}
-
-
 		function validate_username($field)
 		{
 			if ($field == "")
@@ -79,62 +69,72 @@ _END;
 			return true;
 		}
 
-		$username = "";
-		$password = "";
-		if (isset($_POST['username']))
+		function execute()
 		{
-			$username = mysql_entities_fix_string($connection, $_POST['username']);
-		}
-		if (isset($_POST['password']))
-		{
-			$password = mysql_entities_fix_string($connection, $_POST['password']);
-		}
-
-
-		session_start();
-		if ((session_status() == 2) && isset($_SESSION['username']))
-		{
-			$connection->close();
-			header("Location:lametranslate.php");
-			exit;
-		}
-		else if(isset($_POST['username']) && isset($_POST['password']) && validate_username($username) && validate_password($password))
-		{
-			$username = mysql_entities_fix_string($connection, $_POST['username']);
-			$password = mysql_entities_fix_string($connection, $_POST['password']);
-			$res = $connection->query("SELECT * FROM Users WHERE username='$username'");
-			if(!$res)
+			include_once 'dbconfig.php';
+			$connection = new mysqli($hn, $un, $pw, $db);
+			if ($connection->connect_error) 
 			{
-				$connection->close();
-				header("dberrorpage.php");
+				header("Location:dberrorpage.php");
 				exit;
 			}
-			else if ($res->num_rows)
+
+			$username = "";
+			$password = "";
+			if (isset($_POST['username']))
 			{
-				$row = $res->fetch_array(MYSQLI_NUM);
-				$res->close();
-				$salt = $row[1];
-				$token = hash('ripemd128', $salt . $password);
-				if ($token == $row[2])
+				$username = mysql_entities_fix_string($connection, $_POST['username']);
+			}
+			if (isset($_POST['password']))
+			{
+				$password = mysql_entities_fix_string($connection, $_POST['password']);
+			}
+
+			session_start();
+			if (isset($_SESSION['username']))
+			{
+				$connection->close();
+				header("Location:lametranslate.php");
+				exit;
+			}
+			else if(isset($_POST['username']) && isset($_POST['password']) && validate_username($username) && validate_password($password))
+			{
+				$username = mysql_entities_fix_string($connection, $_POST['username']);
+				$password = mysql_entities_fix_string($connection, $_POST['password']);
+				$res = $connection->query("SELECT * FROM Users WHERE username='$username'");
+				if(!$res)
 				{
-					$_SESSION['username'] = $username;
-					$_SESSION['password'] = $password;
 					$connection->close();
-					die ("<p><a href=lametranslate.php>Click here to continue</a></p>");
+					header("dberrorpage.php");
+					exit;
+				}
+				else if ($res->num_rows)
+				{
+					$row = $res->fetch_array(MYSQLI_NUM);
+					$res->close();
+					$salt = $row[1];
+					$token = hash('ripemd128', $salt . $password);
+					if ($token == $row[2])
+					{
+						$_SESSION['username'] = $username;
+						$_SESSION['password'] = $password;
+						$connection->close();
+						die ("<p><a href=lametranslate.php>Click here to continue</a></p>");
+					}
+					else
+					{
+						$connection->close();
+						echo "<p>Invalid password.</p>";
+					}
+					
 				}
 				else
 				{
 					$connection->close();
-					echo "<p>Doesn't look like you used a valid password. It doesn't match with the username you provided. Please enter a valid password.</p>";
+					echo "<p>Invalid username.</p>";
 				}
-				
 			}
-			else
-			{
-				$connection->close();
-				echo "<p>Doesn't look like you used a valid username. It currently does not exist in the database. Please enter in a valid username.</p>";
-			}
-		}
+	}
 	
 	function mysql_entities_fix_string($connection, $string) {
 		return htmlentities(mysql_fix_string($connection, $string));
@@ -144,5 +144,7 @@ _END;
 		if (get_magic_quotes_gpc()) $string = stripslashes($string);
 			return $connection->real_escape_string($string);
 	}
+
+	execute()
 
 ?>

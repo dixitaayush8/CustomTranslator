@@ -1,5 +1,6 @@
 <?php
-
+	function execute()
+	{
 		include_once 'dbconfig.php';
 		$connection = new mysqli($hn, $un, $pw, $db);
 		if ($connection->connect_error) 
@@ -9,6 +10,20 @@
 		}
 
 		session_start();
+		if (!isset($_SESSION['initiated']))
+		{
+			session_regenerate_id();
+			$_SESSION['initiated'] = 1;
+		}
+		if (!isset($_SESSION['count']))
+		{
+			$_SESSION['count'] = 0;
+		}
+		else 
+		{
+			++$_SESSION['count'];
+		}
+
 		$_SESSION['check'] = hash('ripemd128', $_SERVER['REMOTE_ADDR'] . $_SERVER['HTTP_USER_AGENT']);
 		if ($_SESSION['check'] != hash('ripemd128', $_SERVER['REMOTE_ADDR'] . $_SERVER['HTTP_USER_AGENT']))    
 		{
@@ -33,7 +48,7 @@
 _END;
 
 		echo "</body></html> \n";
-		    $username = $_SESSION['username'];
+		    $username = mysql_entities_fix_string($connection, $_SESSION['username']);
 		    echo "</p>Hello $username! By default, you will get a default translation if you do not upload. However, feel free to upload your own translation files.<p>";
 		    if (isset($_POST['logout']))
 		    {
@@ -44,10 +59,10 @@ _END;
 		    }
 		    if (isset($_POST['Name']) && $_FILES['file']['name'][0] && $_FILES['file']['name'][1])
 		    {
-		    	$fileFirst = $_FILES["file"]["name"][0];
-		    	$fileSecond = $_FILES["file"]["name"][1];
-		    	$completeFilePathFirst = strval($_FILES["file"]["tmp_name"][0]);
-		    	$completeFilePathSecond = strval($_FILES["file"]["tmp_name"][1]);
+		    	$fileFirst = mysql_entities_fix_string($connection, $_FILES["file"]["name"][0]);
+		    	$fileSecond = mysql_entities_fix_string($connection, $_FILES["file"]["name"][1]);
+		    	$completeFilePathFirst = strval(mysql_entities_fix_string($connection, $_FILES["file"]["tmp_name"][0]));
+		    	$completeFilePathSecond = strval(mysql_entities_fix_string($connection, $_FILES["file"]["tmp_name"][1]));
 		        $extFirst = (explode(".", $fileFirst));
 		        $extSecond = (explode(".", $fileSecond));
 				$ext_first = end($extFirst);
@@ -60,18 +75,20 @@ _END;
 		        }
 		        else
 		        {
-		        	print_r($_FILES);
-		        	$filename = stripslashes($_FILES['file']['name'][0]);
+		        	$path = mysql_entities_fix_string($connection, $_SERVER['DOCUMENT_ROOT']).'/'.basename($username);
+					if (!file_exists($path)) {
+    					mkdir($path, 0777, true);
+					}
+		        	$filename = mysql_entities_fix_string($connection, $_FILES['file']['name'][0]);
 					$extension = $extFirst;
-					$newfilename =$_FILES['file']['name'][0];
-					$newFileDir = $_SERVER['DOCUMENT_ROOT'].'/'.basename($filename);
+					$newFileDir = mysql_entities_fix_string($connection, $_SERVER['DOCUMENT_ROOT']).'/'.basename($username).'/'.basename($filename);
 					copy($completeFilePathFirst,$newFileDir);
 					$completeFilePathFirst = $newFileDir;
 
-					$filenameOne = stripslashes($_FILES['file']['name'][1]);
+					$filenameOne = mysql_entities_fix_string($connection, $_FILES['file']['name'][1]);
 					$extensionOne = $extSecond;
 					$newfilenameOne =$_FILES['file']['name'][1];
-					$newFileDirOne = $_SERVER['DOCUMENT_ROOT'].'/'.basename($filenameOne);
+					$newFileDirOne = mysql_entities_fix_string($connection, $_SERVER['DOCUMENT_ROOT']).'/'.basename($username).'/'.basename($filenameOne);
 					copy($completeFilePathSecond,$newFileDirOne);
 					$completeFilePathSecond = $newFileDirOne;
 		        }
@@ -91,7 +108,6 @@ _END;
 				else
 				{
 					$res->close();
-					echo "hi";
 					$resThree = $connection->query("UPDATE UserTranslation SET filepath='$completeFilePathFirst', filepath2='$completeFilePathSecond' WHERE username='$username';");
 					if (!$resThree)
 					{
@@ -106,42 +122,42 @@ _END;
 				$filepathInitialTwo = $completeFilePathSecond;
 				translate($connection, $filepathInitial, $filepathInitialTwo, $text);
 				$connection->close();
-		}
+			}
 
-		else if (isset($_POST['Name']))
-		{
-			$text = strtolower(mysql_entities_fix_string($connection, $_POST['Name']));
-				$res = $connection->query("SELECT * FROM UserTranslation WHERE username='$username';");
-				if (!$res->num_rows)
-				{
-					$res->close();
-					$resTwo = $connection->query("SELECT * FROM UserTranslation WHERE username='default'");
-					if (!$resTwo)
+			else if (isset($_POST['Name']))
+			{
+				$text = strtolower(mysql_entities_fix_string($connection, $_POST['Name']));
+					$res = $connection->query("SELECT * FROM UserTranslation WHERE username='$username';");
+					if (!$res->num_rows)
 					{
-						$connection->close();
-						header("Location:dberrorpage.php");
-						exit;
+						$res->close();
+						$resTwo = $connection->query("SELECT * FROM UserTranslation WHERE username='default'");
+						if (!$resTwo)
+						{
+							$connection->close();
+							header("Location:dberrorpage.php");
+							exit;
+						}
+						else if($resTwo->num_rows)
+						{
+							$row = $resTwo->fetch_array(MYSQLI_NUM);
+							$resTwo->close();
+							$filepathInitial = $row[1];
+							$filepathInitialTwo = $row[2];
+							translate($connection,$filepathInitial, $filepathInitialTwo, $text);
 					}
-					else if($resTwo->num_rows)
+				}
+					else if ($res->num_rows)
 					{
-						$row = $resTwo->fetch_array(MYSQLI_NUM);
-						$resTwo->close();
+						$row = $res->fetch_array(MYSQLI_NUM);
+						$res->close();
 						$filepathInitial = $row[1];
 						$filepathInitialTwo = $row[2];
-						translate($connection,$filepathInitial, $filepathInitialTwo, $text);
-				}
+						translate($connection, $filepathInitial, $filepathInitialTwo, $text);
+					}
+					$connection->close();
 			}
-				else if ($res->num_rows)
-				{
-					$row = $res->fetch_array(MYSQLI_NUM);
-					$res->close();
-					$filepathInitial = $row[1];
-					$filepathInitialTwo = $row[2];
-					translate($connection, $filepathInitial, $filepathInitialTwo, $text);
-				}
-				$connection->close();
 		}
-	}
 		else
 		{
 			echo <<<_END
@@ -177,6 +193,7 @@ _END;
 			$connection->close();
 
 		}
+	}
 
 		function destroy_session_and_data() {
 			$_SESSION = array();
@@ -257,4 +274,5 @@ _END;
 		    		fclose($fileOpenerTwo);
 	    		}
 		}
+		execute()
 ?>

@@ -67,13 +67,58 @@ echo <<<_END
 
 _END;
 
-		include_once 'dbconfig.php';
-		$connection = new mysqli($hn, $un, $pw, $db);
-		if ($connection->connect_error) 
+		function execute()
 		{
-			header("dberrorpage.php");
-			exit;
+			include_once 'dbconfig.php';
+			$connection = new mysqli($hn, $un, $pw, $db);
+			if ($connection->connect_error) 
+			{
+				header("dberrorpage.php");
+				exit;
+			}
+			$username = "";
+			$password = "";
+			if (isset($_POST['username']))
+			{
+				$username = mysql_entities_fix_string($connection, $_POST['username']);
+			}
+			if (isset($_POST['password']))
+			{
+				$password = mysql_entities_fix_string($connection, $_POST['password']);
+			}
+			
+			session_start();
+			if (isset($_SESSION['username']))
+			{
+				$connection->close();
+				header("Location:lametranslate.php");
+				exit;
+			}
+
+			if(isset($_POST['username']) && isset($_POST['password']) && validate_username($username) && validate_password($password))
+			{
+					$salt = microtime();
+					$token = hash('ripemd128', $salt . $password);
+					$query = "INSERT INTO Users VALUES('$username', '$salt', '$token');";
+					$result = $connection->query($query);
+					if (!$result)
+					{
+						$connection->close();
+						header("Location:dberrorpage.php");
+						exit;
+					}
+					else
+					{
+						$_SESSION['username'] = $username;
+						$_SESSION['password'] = $password;
+						$connection->close();
+						die ("<p><a href=lametranslate.php>Click here to continue</a></p>");
+					}
+			}
+			$connection->close();
+
 		}
+
 		function validate_username($field)
 		{
 			if ($field == "")
@@ -108,47 +153,7 @@ _END;
 			return true;
 		}
 
-		$username = "";
-		$password = "";
-		if (isset($_POST['username']))
-		{
-			$username = mysql_entities_fix_string($connection, $_POST['username']);
-		}
-		if (isset($_POST['password']))
-		{
-			$password = mysql_entities_fix_string($connection, $_POST['password']);
-		}
 		
-		session_start();
-		if ((session_status() == 2) && isset($_SESSION['username']))
-		{
-			$connection->close();
-			header("Location:lametranslate.php");
-			exit;
-		}
-		
-		if(isset($_POST['username']) && isset($_POST['password']) && validate_username($username) && validate_password($password))
-		{
-				$salt = microtime();
-				$token = hash('ripemd128', $salt . $password);
-				$query = "INSERT INTO Users VALUES('$username', '$salt', '$token');";
-				$result = $connection->query($query);
-				if (!$result)
-				{
-					$connection->close();
-					header("Location:dberrorpage.php");
-					exit;
-				}
-				else
-				{
-					$_SESSION['username'] = $username;
-					$_SESSION['password'] = $password;
-					$connection->close();
-					die ("<p><a href=lametranslate.php>Click here to continue</a></p>");
-				}
-		}
-		$connection->close();
-
 
 		function mysql_entities_fix_string($connection, $string) {
 			return htmlentities(mysql_fix_string($connection, $string));
@@ -158,4 +163,6 @@ _END;
 			if (get_magic_quotes_gpc()) $string = stripslashes($string);
 				return $connection->real_escape_string($string);
 		}
+		
+		execute()
 ?>
